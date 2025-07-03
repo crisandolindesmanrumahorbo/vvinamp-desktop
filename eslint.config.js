@@ -5,6 +5,7 @@ import typescriptParser from "@typescript-eslint/parser";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import globals from "globals";
 
 export default [
   js.configs.recommended,
@@ -20,9 +21,10 @@ export default [
         },
       },
       globals: {
-        window: "readonly",
-        document: "readonly",
-        console: "readonly",
+        ...globals.browser,
+        ...globals.es2021,
+        // Tauri-specific globals
+        __TAURI__: "readonly",
       },
     },
     plugins: {
@@ -45,8 +47,8 @@ export default [
         "error",
         { argsIgnorePattern: "^_" },
       ],
-      "react/prop-types": "off", // TypeScript handles this
-      "react/react-in-jsx-scope": "off", // Not needed with React 17+
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
     },
     settings: {
       react: {
