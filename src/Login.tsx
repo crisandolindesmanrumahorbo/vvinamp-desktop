@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "./components/Input";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  isPermissionGranted,
+  requestPermission,
+} from "@tauri-apps/plugin-notification";
+
 import "./App.css";
 
 const Login = () => {
@@ -37,7 +43,25 @@ function FormLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [token, setTokenmessage] = useState("lohe");
+  const [token, setTokenmessage] = useState("streaming");
+
+  const showNotification = async () => {
+    let permissionGranted = await isPermissionGranted();
+
+    if (!permissionGranted) {
+      const permission = await requestPermission();
+      permissionGranted = permission === "granted";
+    }
+    console.log({ permissionGranted });
+
+    if (permissionGranted) {
+      // If permission is granted, call the Rust command
+      await invoke("show_notification");
+    } else {
+      console.warn("Notification permission denied by the user.");
+      alert("Cannot show notification: permission denied.");
+    }
+  };
 
   const login = async (username: string, password: string) => {
     const body = JSON.stringify({
@@ -114,8 +138,15 @@ function FormLogin() {
         >
           Login
         </button>
+
         <p>{token}</p>
       </form>
+      <button
+        className="font-semibold bg-green-800 px-2 py-2 w-full rounded mt-4 cursor-pointer hover:bg-white hover:text-green-800 border border-green-800  hover:outline-white text-white"
+        onClick={showNotification}
+      >
+        Show
+      </button>
     </>
   );
 }
