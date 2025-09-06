@@ -143,8 +143,8 @@ async fn add_todo(
                 app_handle
                     .notification()
                     .builder()
-                    .title("Woi ini woii")
-                    .body(&title)
+                    .title(format!("Elu ingetin gw ngelakuin {}", &title))
+                    .body(format!("jam {}", &reminder))
                     .show()
                     .unwrap();
             });
@@ -169,6 +169,8 @@ async fn get_all_todos(app_state: tauri::State<'_, AppState>) -> Result<Vec<Todo
     Ok(todos)
 }
 
+static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -187,10 +189,12 @@ pub fn run() {
                     .await
                     .expect("error init pool db");
                 // Run migrations if you have any
-                let migrations = Migrator::new(std::path::Path::new("./migrations"))
-                    .await
-                    .expect("error migrations");
-                migrations.run(&pool).await.expect("error run migrations ");
+                // let migrations = Migrator::new(std::path::Path::new("./migrations"))
+                //     .await
+                //     .expect("error migrations");
+                // migrations.run(&pool).await.expect("error run migrations ");
+                MIGRATOR.run(&pool).await.expect("error run migrations");
+
                 app_handle.manage(AppState {
                     db: Mutex::new(pool),
                 });
