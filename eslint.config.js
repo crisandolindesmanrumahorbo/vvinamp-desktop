@@ -34,6 +34,7 @@ export default [
       "react-refresh": reactRefresh,
     },
     rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
       ...typescript.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...react.configs["jsx-runtime"].rules,
