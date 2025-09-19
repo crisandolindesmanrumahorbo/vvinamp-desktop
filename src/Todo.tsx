@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
 import TimePicker from "./components/TimePicker";
 import { validateTimeAhead } from "./utils/time";
+//https://www.retroui.dev/themes
 
 type ITodo = {
   id: number;
@@ -18,6 +19,17 @@ export default function Todo() {
   const [completed, setCompleted] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("00:00");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState<ITodo>();
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  const todosSort = useMemo(() => {
+    const incompleted = todos.filter((todo) => !todo.completed);
+    const completed = todos.filter((todo) => todo.completed);
+    return incompleted.concat(completed);
+  }, [todos]);
 
   async function getTodosServer() {
     try {
@@ -32,11 +44,11 @@ export default function Todo() {
     }
   }
   const validateForm = (todo: Omit<ITodo, "id">) => {
-    if (todo.reminder) {
-      return validateTimeAhead(todo.reminder);
-    }
     if (todo.title === "") {
       return { isValid: false, message: "Empty Title" };
+    }
+    if (todo.reminder) {
+      return validateTimeAhead(todo.reminder);
     }
     return { isValid: true, message: "" };
   };
@@ -62,6 +74,41 @@ export default function Todo() {
     } catch (error) {
       console.log(error);
       setError("Failed to insert user - check console");
+    }
+  }
+
+  async function updateTodo(todo: ITodo) {
+    try {
+      setIsLoadingUsers(true);
+
+      await invoke("update_state_todo_by_id", {
+        completed: todo.completed ? 0 : 1,
+        id: todo.id,
+      });
+      setError("");
+
+      getTodosServer().then(() => setIsLoadingUsers(false));
+    } catch (error) {
+      console.log(error);
+      setError("Failed to update todo - check console");
+    }
+  }
+
+  async function deleteTodo(todo: ITodo | undefined) {
+    try {
+      setIsLoadingUsers(true);
+
+      await invoke("delete_todo_by_id", {
+        id: todo?.id,
+      });
+      setError("");
+
+      getTodosServer().then(() => setIsLoadingUsers(false));
+      setSelectedTodo(undefined);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.log(error);
+      setError("Failed to delete todo - check console");
     }
   }
 
@@ -113,26 +160,88 @@ export default function Todo() {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th></th>
                   <th>Title</th>
-                  <th>Completed</th>
                   <th>Reminder</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {todos.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.title}</td>
-                    <td>{user.completed ? "true" : "false"}</td>
-                    <td>{user.reminder}</td>
+                {todosSort.map((todo) => (
+                  <tr key={todo.id} className="items-center">
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onChange={() => updateTodo(todo)}
+                      />
+                    </td>
+                    <td>
+                      {todo.completed ? (
+                        <p>
+                          <s>{todo.title}</s>
+                        </p>
+                      ) : (
+                        todo.title
+                      )}
+                    </td>
+
+                    <td>{todo.reminder}</td>
+
+                    <td>
+                      <button
+                        className="text-red-600 p-2"
+                        onClick={() => {
+                          setSelectedTodo(todo);
+                          openModal();
+                        }}
+                      >
+                        x
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <Modal isOpen={isModalOpen} onClose={closeModal}>
+            {/* <h2 className="text-2xl font-bold mb-4">Centered Modal</h2> */}
+            <p>{`Are you sure delete ${selectedTodo?.title}`} </p>
+            <button
+              onClick={() => deleteTodo(selectedTodo)}
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+            >
+              Delete
+            </button>
+          </Modal>
         </div>
       )}
     </main>
   );
 }
+
+const Modal = ({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-black">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-white hover:text-gray-700 py-2 px-4"
+        >
+          &times;
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+};
