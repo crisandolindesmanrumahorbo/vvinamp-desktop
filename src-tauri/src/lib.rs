@@ -169,6 +169,35 @@ async fn get_all_todos(app_state: tauri::State<'_, AppState>) -> Result<Vec<Todo
     Ok(todos)
 }
 
+#[tauri::command]
+async fn delete_todo_by_id(app_state: tauri::State<'_, AppState>, id: i32) -> Result<(), String> {
+    let pool = app_state.db.lock().await;
+    sqlx::query(r#"DELETE FROM todos WHERE id = $1"#)
+        .bind(&id)
+        .execute(&*pool)
+        .await
+        .expect("error delete todo");
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_state_todo_by_id(
+    app_state: tauri::State<'_, AppState>,
+    completed: u16,
+    id: i32,
+) -> Result<(), String> {
+    let pool = app_state.db.lock().await;
+    sqlx::query(r#"UPDATE todos SET completed = $1 WHERE id = $2"#)
+        .bind(completed)
+        .bind(id)
+        .execute(&*pool)
+        .await
+        .expect("error update todo");
+
+    Ok(())
+}
+
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -208,7 +237,9 @@ pub fn run() {
             open_external_window,
             open_custom_window,
             get_all_todos,
-            add_todo
+            add_todo,
+            delete_todo_by_id,
+            update_state_todo_by_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
