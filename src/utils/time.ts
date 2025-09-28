@@ -35,6 +35,7 @@ function isTimeAhead(inputTime: string): boolean {
 
 // Alternative version that returns a validation object with message
 export function validateTimeAhead(inputTime: string): {
+  type: number;
   isValid: boolean;
   message: string;
 } {
@@ -47,6 +48,7 @@ export function validateTimeAhead(inputTime: string): {
     // Input validation
     if (isNaN(inputHours) || isNaN(inputMinutes)) {
       return {
+        type: 2,
         isValid: false,
         message: "Invalid time format. Please use HH:MM format",
       };
@@ -59,6 +61,7 @@ export function validateTimeAhead(inputTime: string): {
       inputMinutes > 59
     ) {
       return {
+        type: 2,
         isValid: false,
         message: "Invalid time values. Hours: 0-23, Minutes: 0-59",
       };
@@ -67,6 +70,7 @@ export function validateTimeAhead(inputTime: string): {
     const isAhead = isTimeAhead(inputTime);
 
     return {
+      type: 2,
       isValid: isAhead,
       message: isAhead
         ? "Time is valid"
@@ -74,6 +78,7 @@ export function validateTimeAhead(inputTime: string): {
     };
   } catch {
     return {
+      type: 2,
       isValid: false,
       message: "Invalid time format",
     };
