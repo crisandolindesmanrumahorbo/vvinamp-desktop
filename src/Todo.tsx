@@ -54,8 +54,12 @@ export default function Todo() {
   const closeModal = () => setIsModalOpen(false);
 
   const todosSort = useMemo(() => {
-    const incompleted = todos.filter((todo) => !todo.completed);
-    const completed = todos.filter((todo) => todo.completed);
+    const incompleted = todos
+      .filter((todo) => !todo.completed)
+      .sort((a, b) => b.id - a.id); // Sort by ID in descending order
+    const completed = todos
+      .filter((todo) => todo.completed)
+      .sort((a, b) => b.id - a.id); // Sort by ID in descending order
     return incompleted.concat(completed);
   }, [todos]);
 
