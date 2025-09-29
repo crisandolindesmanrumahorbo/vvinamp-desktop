@@ -143,8 +143,8 @@ async fn add_todo(
                 app_handle
                     .notification()
                     .builder()
-                    .title(format!("Elu ingetin gw ngelakuin {}", &title))
-                    .body(format!("jam {}", &reminder))
+                    .title(format!("jangan lupa '{}' yaa", &title))
+                    .body(format!("udah jam {} nihh, semangatt <3", &reminder))
                     .show()
                     .unwrap();
             });
