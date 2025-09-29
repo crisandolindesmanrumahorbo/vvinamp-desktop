@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
@@ -28,12 +29,15 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, X } from "lucide-react";
+import { GripVertical, X, Trash } from "lucide-react";
 import { Checkbox } from "./components/Checkbox";
 import { Badge } from "./components/Badge";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
-//https://www.retroui.dev/themes
+// https://www.retroui.dev/themes
+// handle icon
+// handle max input todo, since it will impact modal deleting
+// update todo
 
 type ITodo = {
   id: number;
@@ -50,6 +54,7 @@ export default function Todo() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<ITodo>();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const closeModal = () => setIsModalOpen(false);
 
@@ -73,6 +78,28 @@ export default function Todo() {
     } catch (error) {
       console.log(error);
       setError("Failed to get users - check console");
+    }
+  }
+  async function getTodosServerInit() {
+    try {
+      // Force minimum 4 second loading time
+      const [dbTodos] = await Promise.all([
+        invoke("get_all_todos"),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+
+      setError("");
+      setTodos(dbTodos as ITodo[]);
+      setIsLoadingUsers(false);
+
+      // Pause video when loading completes
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+    } catch (error) {
+      console.log(error);
+      setError("Failed to get users - check console");
+      setIsLoadingUsers(false);
     }
   }
   const validateForm = (todo: Omit<ITodo, "id">) => {
@@ -151,67 +178,103 @@ export default function Todo() {
   const onChangeTime = (time: string) => {
     setSelectedTime(time);
     console.log(time);
+    setError("");
   };
 
   useEffect(() => {
-    getTodosServer();
+    getTodosServerInit();
   }, []);
 
-  return (
-    <main className="py-2 px-4 overflow-x-hidden [overflow-anchor:none]">
-      <h1 className="font-head text-lg">Todotte</h1>
-
-      {isLoadingUsers ? (
-        <div>Loading todos...</div>
-      ) : (
-        <div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setTodoServer({
-                title: title,
-                completed: false,
-                reminder: selectedTime === "00:00" ? null : selectedTime,
-              });
-            }}
+  if (isLoadingUsers) {
+    return (
+      <div className="flex flex-col justify-center bg-primary items-center min-h-screen space-y-4">
+        {/* Small centered video animation */}
+        <div className="relative">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-[150px] h-[150px] object-contain rounded-xl"
           >
-            <div className="flex flex-start gap-4 items-center">
-              <IInput
-                type="text"
-                placeholder="type something..."
-                value={title}
-                onChange={(e) => setTitle(e.currentTarget.value)}
-                clearText={() => {
-                  setTitle("");
-                }}
-                aria-invalid={error === "Empty Title"}
-              />
-              <ClockPicker
-                timeSelected={selectedTime}
-                onTimeChange={onChangeTime}
-              />
-              <Button type="submit">+</Button>
-            </div>
-            {error && <p className="text-red-500 mt-2">{error}</p>}
-          </form>
-          <Todos
-            todos={todosSort}
-            setSelectedTodo={setSelectedTodo}
-            setOpenModal={setIsModalOpen}
-            updateTodo={updateTodo}
-          />
-          <Modal isOpen={isModalOpen} onClose={closeModal}>
-            <h2 className="text-2xl font-bold mb-4">Delete</h2>
-            <p>{`Are you sure delete ${selectedTodo?.title}`} </p>
-            <button
-              onClick={() => deleteTodo(selectedTodo)}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-            >
-              Delete
-            </button>
-          </Modal>
+            <source src="/splash-animation.mp4" type="video/mp4" />
+            {/* Fallback if video doesn't load */}
+            <div className="w-20 h-20 bg-blue-500 rounded-full animate-pulse" />
+          </video>
         </div>
-      )}
+
+        {/* Loading text */}
+        <p className="text-primary-foreground text-sm font-medium animate-pulse">
+          Wait yaa..
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <main className="px-4 overflow-x-hidden [overflow-anchor:none] h-screen">
+      <h1 className="mt-2 font-head text-lg">Todotte</h1>
+
+      <div>
+        <form
+          className="sticky top-0 bg-foreground pt-1 pb-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTodoServer({
+              title: title,
+              completed: false,
+              reminder: selectedTime === "00:00" ? null : selectedTime,
+            });
+          }}
+        >
+          <div className="flex flex-start gap-4 items-center">
+            <IInput
+              type="text"
+              placeholder="type something..."
+              value={title}
+              onChange={(e) => {
+                setTitle(e.currentTarget.value);
+                setError("");
+              }}
+              clearText={() => {
+                setTitle("");
+                setError("");
+              }}
+              aria-invalid={error === "Empty Title"}
+            />
+            <ClockPicker
+              timeSelected={selectedTime}
+              onTimeChange={onChangeTime}
+            />
+            <Button type="submit">+</Button>
+          </div>
+          {error && <p className="text-red-500 mt-2">{error}</p>}
+        </form>
+        <Todos
+          todos={todosSort}
+          setSelectedTodo={setSelectedTodo}
+          setOpenModal={setIsModalOpen}
+          updateTodo={updateTodo}
+        />
+        <Modal isOpen={isModalOpen} onClose={closeModal}>
+          {/* <h2 className="text-2xl font-bold mb-4">Delete</h2> */}
+          <div className="w-full items-center justify-center flex flex-col gap-2 ">
+            <p className="font-sans mt-4">
+              <span>Are you sure delete</span>
+              <span className="font-semibold">
+                {` ${(selectedTodo?.title.length ?? 0) > 100 ? `"${selectedTodo?.title.substring(0, 100)}..."` : `"${selectedTodo?.title}"`}`}
+              </span>
+            </p>
+            <Button
+              onClick={() => deleteTodo(selectedTodo)}
+              className="hover:bg-transparent !bg-destructive text-white hover:text-white"
+            >
+              <Trash className="h-4 w-4 mr-2" /> Delete
+            </Button>
+          </div>
+        </Modal>
+      </div>
     </main>
   );
 }
@@ -232,7 +295,7 @@ const Modal = ({
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative items-center text-center">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-white hover:text-gray-700 py-2 px-4"
+          className="absolute top-2 right-2 text-white hover:text-gray-700 py-2 px-2 hover:bg-red-100 hover:rounded-md"
         >
           <X size={16} color="gray" />
         </button>
@@ -272,8 +335,8 @@ const Todos = ({
         modifiers={[restrictToVerticalAxis]}
       >
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
-          <div className="mt-4">
-            <div className="flex flex-col gap-4">
+          <div className="mt-6">
+            <div className="flex flex-col gap-6">
               {items.map((todo) => (
                 <SortableItem
                   key={todo.id}
@@ -353,6 +416,7 @@ export function SortableItem({
               )}
             </div>
             <button
+              className="p-1 hover:bg-red-100 hover:rounded-md"
               onClick={() => {
                 setSelectedTodo(todo);
                 setOpenModal(true);

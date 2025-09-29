@@ -24,7 +24,7 @@ export const IInput: React.FC<InputProps> = ({
           type={type}
           value={value}
           placeholder={placeholder}
-          className={`px-4 py-2 w-full rounded border-2 shadow-md transition focus:outline-none focus:ring-0 focus:shadow-xs ${
+          className={`text-sans px-4 py-2 w-full rounded border-2 shadow-md transition focus:outline-none focus:ring-0 focus:shadow-xs ${
             props["aria-invalid"]
               ? "border-destructive text-destructive shadow-xs shadow-destructive"
               : "border-border"
