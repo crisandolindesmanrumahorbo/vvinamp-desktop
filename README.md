@@ -1,6 +1,17 @@
 <div align="center">
   <img width="200" src="document/logo.png" alt="todo logo">
 </div>
+<div style="background-color: #e5d0ff; border-left: 5px solid #BF8BFF; padding: 10px; border-radius: 5px;">
+  <p style="margin: 0; padding: 0;">
+    <b>Install the app</b> 
+  </p>
+  <p style="margin: 0; padding: 0;">
+   <a href="https://github.com/crisandolindesmanrumahorbo/todotte/releases/download/v1.0.2-beta/Todotte_0.1.0_x64-setup.exe" style="color:#8f00ff; font-weight:bold;">⬇️ Todotte for Windows</a>
+  </p>
+  <p style="margin: 0; padding: 0;">
+   <a href="https://github.com/crisandolindesmanrumahorbo/todotte/releases/download/v1.0.2-beta/Todotte_0.1.0_aarch64.dmg" style="color:#8f00ff; font-weight:bold;">⬇️ Todotte for Mac</a>
+  </p>
+</div>
 
 # Todotte
 
